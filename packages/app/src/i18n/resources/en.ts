@@ -1131,12 +1131,7 @@ export const en = {
       import: {
         availability: {
           checking: "Checking import availability…",
-          "unsupported-source": "This import source is unavailable.",
           "host-not-running": "Start the Desktop-managed host before importing.",
-          "nonlocal-host": "Import is unavailable for a nonlocal host.",
-          "password-protected": "Import is unavailable while the local host is password-protected.",
-          "host-version-mismatch": "Update the Desktop-managed host before importing.",
-          unavailable: "Desktop import is unavailable.",
         },
         actions: { import: "Import", importing: "Importing…", done: "Done" },
         unavailable: "Desktop import is unavailable.",

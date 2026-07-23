@@ -17,7 +17,11 @@ interface DaemonStatusData {
   logs: DesktopDaemonLogs;
 }
 
-export function useDaemonStatus() {
+interface UseDaemonStatusOptions {
+  refetchOnMount?: boolean | "always";
+}
+
+export function useDaemonStatus(options: UseDaemonStatusOptions = {}) {
   const { t } = useTranslation();
   const queryClient = useQueryClient();
   const enabled = shouldUseDesktopDaemon();
@@ -26,7 +30,7 @@ export function useDaemonStatus() {
     queryKey: DAEMON_STATUS_QUERY_KEY,
     enabled,
     staleTime: 30_000,
-    refetchOnMount: "always",
+    refetchOnMount: options.refetchOnMount ?? "always",
     retry: false,
     queryFn: async () => {
       const [status, logs] = await Promise.all([getDesktopDaemonStatus(), getDesktopDaemonLogs()]);

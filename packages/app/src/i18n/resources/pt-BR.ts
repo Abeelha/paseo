@@ -1147,13 +1147,7 @@ export const ptBR: TranslationResources = {
       import: {
         availability: {
           checking: "Verificando a disponibilidade da importação…",
-          "unsupported-source": "Esta fonte de importação não está disponível.",
           "host-not-running": "Inicie o host gerenciado pelo Desktop antes de importar.",
-          "nonlocal-host": "A importação não está disponível para um host não local.",
-          "password-protected":
-            "A importação não está disponível enquanto o host local estiver protegido por senha.",
-          "host-version-mismatch": "Atualize o host gerenciado pelo Desktop antes de importar.",
-          unavailable: "A importação do Desktop não está disponível.",
         },
         actions: { import: "Importar", importing: "Importando…", done: "Concluído" },
         unavailable: "A importação pelo aplicativo para desktop não está disponível.",

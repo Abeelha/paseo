@@ -1135,13 +1135,7 @@ export const ja: TranslationResources = {
       import: {
         availability: {
           checking: "インポートが利用可能か確認しています…",
-          "unsupported-source": "このインポート元は利用できません。",
           "host-not-running": "インポートする前にDesktop管理ホストを起動してください。",
-          "nonlocal-host": "ローカル以外のホストではインポートできません。",
-          "password-protected":
-            "ローカルホストがパスワード保護されている間はインポートできません。",
-          "host-version-mismatch": "インポートする前にDesktop管理ホストを更新してください。",
-          unavailable: "Desktopインポートは利用できません。",
         },
         actions: { import: "インポート", importing: "インポート中…", done: "完了" },
         unavailable: "デスクトップインポートは利用できません。",

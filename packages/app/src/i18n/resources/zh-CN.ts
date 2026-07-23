@@ -1106,12 +1106,7 @@ export const zhCN: TranslationResources = {
       import: {
         availability: {
           checking: "正在检查导入是否可用…",
-          "unsupported-source": "此导入来源不可用。",
           "host-not-running": "请先启动由桌面端管理的主机再导入。",
-          "nonlocal-host": "非本地主机无法使用导入。",
-          "password-protected": "本地主机受密码保护时无法导入。",
-          "host-version-mismatch": "请先更新由桌面端管理的主机再导入。",
-          unavailable: "桌面端导入不可用。",
         },
         actions: { import: "导入", importing: "正在导入…", done: "完成" },
         unavailable: "桌面端导入不可用。",

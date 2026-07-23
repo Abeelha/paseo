@@ -1120,12 +1120,7 @@ export const ar: TranslationResources = {
       import: {
         availability: {
           checking: "جارٍ التحقق من توفّر الاستيراد…",
-          "unsupported-source": "مصدر الاستيراد هذا غير متاح.",
           "host-not-running": "شغّل المضيف المُدار بواسطة تطبيق سطح المكتب قبل الاستيراد.",
-          "nonlocal-host": "الاستيراد غير متاح لمضيف غير محلي.",
-          "password-protected": "الاستيراد غير متاح أثناء حماية المضيف المحلي بكلمة مرور.",
-          "host-version-mismatch": "حدّث المضيف المُدار بواسطة تطبيق سطح المكتب قبل الاستيراد.",
-          unavailable: "استيراد تطبيق سطح المكتب غير متاح.",
         },
         actions: { import: "استيراد", importing: "جارٍ الاستيراد…", done: "تم" },
         unavailable: "الاستيراد عبر تطبيق سطح المكتب غير متاح.",

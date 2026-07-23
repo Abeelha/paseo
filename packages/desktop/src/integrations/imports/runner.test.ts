@@ -79,26 +79,30 @@ test("reports library failures and closes the host", async () => {
 });
 
 test.each([
-  [{ ...eligibleTarget, passwordProtected: true }, "password-protected"],
-  [{ ...eligibleTarget, listen: "10.0.0.5:6767" }, "nonlocal-host"],
-  [{ ...eligibleTarget, status: "stopped" as const }, "host-not-running"],
-  [{ ...eligibleTarget, daemonVersion: "0.1.109" }, "host-version-mismatch"],
-] as const)("returns a localizable availability reason", async (target, reason) => {
+  [
+    { ...eligibleTarget, passwordProtected: true },
+    "Import is unavailable while the local host is password-protected.",
+  ],
+  [
+    { ...eligibleTarget, status: "stopped" as const },
+    "Import requires the running Paseo Desktop-managed host.",
+  ],
+  [
+    { ...eligibleTarget, daemonVersion: "0.1.109" },
+    "Update the Desktop-managed host before importing.",
+  ],
+] as const)("refuses an ineligible import target", async (target, message) => {
   const runner = createRunner({ target });
 
-  await expect(runner.availability("source-fixture")).resolves.toEqual({
-    available: false,
-    reason,
-  });
+  await expect(runner.run("source-fixture", () => undefined)).rejects.toThrow(message);
 });
 
-test.each(["[::1]:6767", "::1:6767"])("accepts local IPv6 listen address %s", async (listen) => {
-  const runner = createRunner({ target: { ...eligibleTarget, listen } });
-
-  await expect(runner.availability("source-fixture")).resolves.toEqual({
-    available: true,
-    reason: null,
+test("accepts a Desktop-managed host without inferring ownership from its listen address", async () => {
+  const runner = createRunner({
+    target: { ...eligibleTarget, listen: "0.0.0.0:6767" },
   });
+
+  await expect(runner.run("source-fixture", () => undefined)).resolves.toBe("run-1");
 });
 
 test("rejects an unregistered source before target lookup or connection", async () => {

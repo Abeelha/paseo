@@ -41,6 +41,7 @@ test("imports from the product Integrations row and renders success, failure, an
   electronApp = await launchProduct();
   const page = await electronApp.firstWindow();
   await openIntegrations(page);
+  await expect(page.getByRole("button", { name: "Enable built-in daemon" })).toHaveCount(0);
 
   await openImport(page);
   await expect(

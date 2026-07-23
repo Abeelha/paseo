@@ -43,18 +43,6 @@ contextBridge.exposeInMainWorld("paseoDesktop", {
     },
   },
   imports: {
-    getAvailability: (input: { source: string }) =>
-      ipcRenderer.invoke("paseo:imports:availability", input) as Promise<{
-        available: boolean;
-        reason:
-          | "unsupported-source"
-          | "host-not-running"
-          | "nonlocal-host"
-          | "password-protected"
-          | "host-version-mismatch"
-          | "unavailable"
-          | null;
-      }>,
     run: (input: { source: string }) =>
       ipcRenderer.invoke("paseo:imports:run", input) as Promise<{ runId: string }>,
     onOutput: (handler: (output: DesktopImportOutput) => void): (() => void) => {

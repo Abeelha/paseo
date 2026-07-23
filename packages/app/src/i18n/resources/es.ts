@@ -1160,13 +1160,7 @@ export const es: TranslationResources = {
       import: {
         availability: {
           checking: "Comprobando la disponibilidad de la importación…",
-          "unsupported-source": "Esta fuente de importación no está disponible.",
           "host-not-running": "Inicia el host gestionado por Desktop antes de importar.",
-          "nonlocal-host": "La importación no está disponible para un host no local.",
-          "password-protected":
-            "La importación no está disponible mientras el host local esté protegido con contraseña.",
-          "host-version-mismatch": "Actualiza el host gestionado por Desktop antes de importar.",
-          unavailable: "La importación de Desktop no está disponible.",
         },
         actions: { import: "Importar", importing: "Importando…", done: "Listo" },
         unavailable: "La importación de escritorio no está disponible.",

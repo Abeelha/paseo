@@ -1150,12 +1150,7 @@ export const ru: TranslationResources = {
       import: {
         availability: {
           checking: "Проверка доступности импорта…",
-          "unsupported-source": "Этот источник импорта недоступен.",
           "host-not-running": "Запустите управляемый Desktop хост перед импортом.",
-          "nonlocal-host": "Импорт недоступен для нелокального хоста.",
-          "password-protected": "Импорт недоступен, пока локальный хост защищён паролем.",
-          "host-version-mismatch": "Обновите управляемый Desktop хост перед импортом.",
-          unavailable: "Импорт в Desktop недоступен.",
         },
         actions: { import: "Импортировать", importing: "Импорт…", done: "Готово" },
         unavailable: "Импорт в настольном приложении недоступен.",

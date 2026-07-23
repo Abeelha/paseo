@@ -21,14 +21,6 @@ export type DesktopImportOutput =
   | { runId: string; type: "event"; event: ImportEvent }
   | { runId: string; type: "status"; succeeded: boolean };
 
-export type ImportUnavailableReason =
-  | "unsupported-source"
-  | "host-not-running"
-  | "nonlocal-host"
-  | "password-protected"
-  | "host-version-mismatch"
-  | "unavailable";
-
 type ConnectedImportHost = PaseoImportHost & { close(): Promise<void> };
 
 interface ImportRunnerDependencies {
@@ -43,21 +35,6 @@ export class DesktopImportRunner {
   private activeRunId: string | null = null;
 
   constructor(private readonly dependencies: ImportRunnerDependencies) {}
-
-  async availability(
-    sourceId: string,
-  ): Promise<{ available: boolean; reason: ImportUnavailableReason | null }> {
-    try {
-      this.requireSource(sourceId);
-      assertEligibleTarget(await this.dependencies.getTarget());
-      return { available: true, reason: null };
-    } catch (error) {
-      return {
-        available: false,
-        reason: error instanceof ImportEligibilityError ? error.reason : "unavailable",
-      };
-    }
-  }
 
   async run(sourceId: string, emit: (output: DesktopImportOutput) => void): Promise<string> {
     const source = this.requireSource(sourceId);
@@ -110,10 +87,7 @@ export class DesktopImportRunner {
   private requireSource(sourceId: string): ImportSourceInput {
     const source = this.dependencies.sources.get(sourceId);
     if (!source) {
-      throw new ImportEligibilityError(
-        "unsupported-source",
-        `Unsupported import source: ${sourceId}`,
-      );
+      throw new Error(`Unsupported import source: ${sourceId}`);
     }
     return source;
   }
@@ -121,46 +95,14 @@ export class DesktopImportRunner {
 
 export function assertEligibleTarget(target: ImportTarget): void {
   if (target.status !== "running" || !target.desktopManaged) {
-    throw new ImportEligibilityError(
-      "host-not-running",
-      "Import requires the running Paseo Desktop-managed host.",
-    );
-  }
-  if (!isLocalListen(target.listen)) {
-    throw new ImportEligibilityError("nonlocal-host", "Import is unavailable for a nonlocal host.");
+    throw new Error("Import requires the running Paseo Desktop-managed host.");
   }
   if (target.passwordProtected) {
-    throw new ImportEligibilityError(
-      "password-protected",
-      "Import is unavailable while the local host is password-protected.",
-    );
+    throw new Error("Import is unavailable while the local host is password-protected.");
   }
   if (normalizeVersion(target.daemonVersion) !== normalizeVersion(target.appVersion)) {
-    throw new ImportEligibilityError(
-      "host-version-mismatch",
-      "Update the Desktop-managed host before importing.",
-    );
+    throw new Error("Update the Desktop-managed host before importing.");
   }
-}
-
-class ImportEligibilityError extends Error {
-  constructor(
-    readonly reason: ImportUnavailableReason,
-    message: string,
-  ) {
-    super(message);
-  }
-}
-
-function isLocalListen(listen: string | null): boolean {
-  if (!listen) return false;
-  if (listen.startsWith("unix://") || listen.startsWith("pipe://") || listen.startsWith("/")) {
-    return true;
-  }
-  const endpoint = listen.replace(/^tcp:\/\//, "").toLowerCase();
-  if (endpoint.startsWith("[::1]:") || endpoint.startsWith("::1:")) return true;
-  const host = endpoint.split(":")[0];
-  return host === "127.0.0.1" || host === "localhost" || host === "[::1]";
 }
 
 function normalizeVersion(version: string | null): string | null {

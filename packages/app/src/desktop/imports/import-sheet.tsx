@@ -19,45 +19,6 @@ export interface ImportSourceDescriptor {
   title: string;
 }
 
-export function useImportAvailability(source: string) {
-  const { t } = useTranslation();
-  const [availability, setAvailability] = useState<{
-    available: boolean;
-    reason: string | null;
-  }>({
-    available: false,
-    reason: t("desktop.integrations.import.availability.checking"),
-  });
-  const [visible, setVisible] = useState(false);
-  useEffect(() => {
-    let active = true;
-    let retry: ReturnType<typeof setTimeout> | null = null;
-    async function loadAvailability() {
-      const next = await getDesktopHost()?.imports?.getAvailability?.({ source });
-      if (active && next) {
-        setAvailability({
-          available: next.available,
-          reason: next.reason ? t(`desktop.integrations.import.availability.${next.reason}`) : null,
-        });
-        if (next.reason === "host-not-running") {
-          retry = setTimeout(() => void loadAvailability(), 2_000);
-        }
-      }
-    }
-    void loadAvailability();
-    return () => {
-      active = false;
-      if (retry) clearTimeout(retry);
-    };
-  }, [source, t]);
-  return {
-    ...availability,
-    visible,
-    open: () => setVisible(true),
-    close: () => setVisible(false),
-  };
-}
-
 export function ImportSheet({
   source,
   visible,

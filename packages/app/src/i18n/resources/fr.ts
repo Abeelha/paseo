@@ -1162,13 +1162,7 @@ export const fr: TranslationResources = {
       import: {
         availability: {
           checking: "Vérification de la disponibilité de l’importation…",
-          "unsupported-source": "Cette source d’importation est indisponible.",
           "host-not-running": "Démarrez l’hôte géré par Desktop avant l’importation.",
-          "nonlocal-host": "L’importation est indisponible pour un hôte distant.",
-          "password-protected":
-            "L’importation est indisponible tant que l’hôte local est protégé par mot de passe.",
-          "host-version-mismatch": "Mettez à jour l’hôte géré par Desktop avant l’importation.",
-          unavailable: "L’importation Desktop est indisponible.",
         },
         actions: { import: "Importer", importing: "Importation…", done: "Terminé" },
         unavailable: "L’importation depuis l’application de bureau est indisponible.",

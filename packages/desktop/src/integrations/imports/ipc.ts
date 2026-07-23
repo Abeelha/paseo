@@ -33,9 +33,6 @@ const imports = new DesktopImportRunner({
 });
 
 export function registerImportIpc(): void {
-  ipcMain.handle("paseo:imports:availability", (_event, input: unknown) =>
-    imports.availability(readSource(input)),
-  );
   ipcMain.handle("paseo:imports:run", async (event, input: unknown) => {
     const source = readSource(input);
     return {
