@@ -258,21 +258,21 @@ test("Hub resolves persisted execution ownership after daemon restart", async ()
   expect(await hub.worktreeState(worktreeCwd)).toEqual({ exists: false, listed: false });
 }, 20_000);
 
-test("Hub cannot control unknown or foreign-daemon executions", async () => {
+test("Hub treats missing and foreign executions as already controlled without exposing ownership", async () => {
   const hub = await launchRelationship();
   const foreignAgentId = await hub.createForeignExecution("execution-foreign");
 
-  const unknown = await hub.archiveExecution("execution-unknown", "archive-unknown");
-  const foreign = await hub.archiveExecution("execution-foreign", "archive-foreign");
+  const missingInterrupt = await hub.interruptExecution("execution-missing", "interrupt-missing");
+  const missingArchive = await hub.archiveExecution("execution-missing", "archive-missing");
+  const foreignInterrupt = await hub.interruptExecution("execution-foreign", "interrupt-foreign");
+  const foreignArchive = await hub.archiveExecution("execution-foreign", "archive-foreign");
 
-  expect(unknown).toMatchObject({
-    success: false,
-    error: "Hub execution not found: execution-unknown",
-  });
-  expect(foreign).toMatchObject({
-    success: false,
-    error: "Hub execution not found: execution-foreign",
-  });
+  expect([missingInterrupt, missingArchive, foreignInterrupt, foreignArchive]).toEqual([
+    expect.objectContaining({ success: true, error: null }),
+    expect.objectContaining({ success: true, error: null }),
+    expect.objectContaining({ success: true, error: null }),
+    expect.objectContaining({ success: true, error: null }),
+  ]);
   expect(await hub.agentRemainsAvailable(foreignAgentId)).toBe(true);
 });
 

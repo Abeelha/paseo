@@ -52,6 +52,9 @@ The Hub ends an execution by sending `hub.execution.control.request` with the du
 and either `interrupt` or `archive`. The daemon resolves the agent from the authenticated daemon
 relationship plus that execution ID; callers cannot supply an agent ID or workspace path. Both
 actions are idempotent and continue to resolve from stored ownership after daemon restart.
+If no execution exists for that authenticated daemon and execution ID, interrupt and archive return
+success because the requested stopped or archived state already holds. An execution owned by another
+daemon is indistinguishable from a missing execution and is never exposed or affected.
 
 Interrupt uses the ordinary agent cancellation lifecycle. Archive first archives the owned agent.
 When that agent belongs to an active Paseo-owned worktree workspace, the daemon also archives the

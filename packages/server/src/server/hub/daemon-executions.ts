@@ -244,11 +244,11 @@ export class DaemonExecutions implements HubExecutionAgents {
   ): Promise<void> {
     this.requireAuthority(authorityGeneration, "execution control");
     const record = await this.agentStorage.findByDaemonExecution(owner);
+    this.requireAuthority(authorityGeneration, "execution control");
     if (!record) {
-      throw new Error(`Hub execution not found: ${input.executionId}`);
+      return;
     }
     const storedOwner = this.requireOwner(record);
-    this.requireAuthority(authorityGeneration, "execution control");
 
     if (input.action === "interrupt") {
       if (!record.archivedAt && this.agentManager.getAgent(record.id)) {
