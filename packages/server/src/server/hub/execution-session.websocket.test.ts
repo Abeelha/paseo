@@ -97,21 +97,60 @@ test("Hub reconnects without retaining trusted session state", async () => {
   expect(hub.observedTrustedLifecycleMessages()).toEqual([]);
 });
 
-test("Hub create forwards worktree and auto-archive through the existing create path", async () => {
+test("Hub interrupts an owned running execution idempotently", async () => {
+  const hub = await launchRelationship();
+  hub.beginOwnedCreate("interrupt-create", "execution-interrupt", { prompt: "sleep 30" });
+  const created = await hub.ownedCreateResult("interrupt-create");
+  await hub.ownedRunningUpdate(created.payload.agentId!);
+
+  const interrupted = await hub.interruptExecution("execution-interrupt", "interrupt-first");
+  const duplicate = await hub.interruptExecution("execution-interrupt", "interrupt-duplicate");
+
+  expect(interrupted).toEqual({
+    requestId: "interrupt-first",
+    executionId: "execution-interrupt",
+    action: "interrupt",
+    success: true,
+    error: null,
+  });
+  expect(duplicate).toEqual({
+    requestId: "interrupt-duplicate",
+    executionId: "execution-interrupt",
+    action: "interrupt",
+    success: true,
+    error: null,
+  });
+  expect(hub.ownedAgentIsRunning(created.payload.agentId!)).toBe(false);
+});
+
+test("Hub archives only the owned agent in a shared local checkout", async () => {
+  const hub = await launchRelationship();
+  hub.beginOwnedCreate("local-create", "execution-local", { prompt: "sleep 30" });
+  const created = await hub.ownedCreateResult("local-create");
+  await hub.ownedRunningUpdate(created.payload.agentId!);
+
+  const archived = await hub.archiveExecution("execution-local", "archive-local");
+  const duplicate = await hub.archiveExecution("execution-local", "archive-local-duplicate");
+
+  expect(archived).toMatchObject({ success: true, error: null, action: "archive" });
+  expect(duplicate).toMatchObject({ success: true, error: null, action: "archive" });
+  expect(await hub.ownedAgentArchivedAt(created.payload.agentId!)).toEqual(expect.any(String));
+  expect(hub.ownedAgentIsRunning(created.payload.agentId!)).toBe(false);
+  expect(hub.repoExists()).toBe(true);
+});
+
+test("Hub archives a running execution's Paseo-created worktree", async () => {
   const hub = await launchRelationship();
   hub.beginOwnedCreate("worktree-create", "execution-worktree", {
     worktree: { mode: "branch-off", newBranch: "hub-created-worktree", base: "main" },
-    autoArchive: true,
     prompt: "sleep 30",
-    modeId: "always-ask",
   });
   const worktreeCreated = await hub.ownedCreateResult("worktree-create");
   const worktreeCwd = hub.latestCreatedCwd();
-  const permission = await hub.ownedPermissionRequest(worktreeCreated.payload.agentId!);
+  await hub.ownedRunningUpdate(worktreeCreated.payload.agentId!);
   const duringRun = await hub.worktreeState(worktreeCwd!);
   const archiveCompletion = hub.waitForOwnedArchiveCompletion(worktreeCreated.payload.agentId!);
-  await hub.allowOwnedPermission(worktreeCreated.payload.agentId!, permission.id);
-  await hub.ownedTurnCompletion(worktreeCreated.payload.agentId!);
+  const response = await hub.archiveExecution("execution-worktree", "archive-worktree");
   const archive = await archiveCompletion;
   const afterArchive = await hub.worktreeState(worktreeCwd!);
 
@@ -121,12 +160,69 @@ test("Hub create forwards worktree and auto-archive through the existing create 
   });
   expect(worktreeCwd).not.toBe(hub.repoRoot());
   expect(duringRun).toEqual({ exists: true, listed: true });
+  expect(response).toMatchObject({ success: true, error: null, action: "archive" });
   expect(afterArchive).toEqual({ exists: false, listed: false });
   expect(archive).toEqual({
     agentArchivedAt: expect.any(String),
     workspaceArchivedAt: expect.any(String),
   });
 }, 20_000);
+
+test("a sibling workspace keeps an archived execution's worktree directory alive", async () => {
+  const hub = await launchRelationship();
+  hub.beginOwnedCreate("sibling-create", "execution-sibling", {
+    worktree: { mode: "branch-off", newBranch: "hub-sibling-worktree", base: "main" },
+    prompt: "sleep 30",
+  });
+  const created = await hub.ownedCreateResult("sibling-create");
+  const worktreeCwd = hub.latestCreatedCwd()!;
+  await hub.ownedRunningUpdate(created.payload.agentId!);
+  await hub.createSiblingWorkspace(worktreeCwd);
+
+  const response = await hub.archiveExecution("execution-sibling", "archive-sibling");
+
+  expect(response).toMatchObject({ success: true, error: null });
+  expect(await hub.worktreeState(worktreeCwd)).toEqual({ exists: true, listed: true });
+  expect(await hub.ownedAgentArchivedAt(created.payload.agentId!)).toEqual(expect.any(String));
+}, 20_000);
+
+test("Hub resolves persisted execution ownership after daemon restart", async () => {
+  const hub = await launchRelationship();
+  hub.beginOwnedCreate("restart-create", "execution-restart", {
+    worktree: { mode: "branch-off", newBranch: "hub-restart-worktree", base: "main" },
+    prompt: "sleep 30",
+  });
+  const created = await hub.ownedCreateResult("restart-create");
+  const worktreeCwd = hub.latestCreatedCwd()!;
+  await hub.ownedRunningUpdate(created.payload.agentId!);
+
+  await hub.restartDaemon();
+  await hub.socketDialed();
+  hub.connectLatestSocket();
+  const response = await hub.archiveExecution("execution-restart", "archive-after-restart");
+
+  expect(response).toMatchObject({ success: true, error: null });
+  expect(await hub.ownedAgentArchivedAt(created.payload.agentId!)).toEqual(expect.any(String));
+  expect(await hub.worktreeState(worktreeCwd)).toEqual({ exists: false, listed: false });
+}, 20_000);
+
+test("Hub cannot control unknown or foreign-daemon executions", async () => {
+  const hub = await launchRelationship();
+  const foreignAgentId = await hub.createForeignExecution("execution-foreign");
+
+  const unknown = await hub.archiveExecution("execution-unknown", "archive-unknown");
+  const foreign = await hub.archiveExecution("execution-foreign", "archive-foreign");
+
+  expect(unknown).toMatchObject({
+    success: false,
+    error: "Hub execution not found: execution-unknown",
+  });
+  expect(foreign).toMatchObject({
+    success: false,
+    error: "Hub execution not found: execution-foreign",
+  });
+  expect(await hub.agentRemainsAvailable(foreignAgentId)).toBe(true);
+});
 
 test("archive observation closes its first watcher when the second watcher cannot start", async () => {
   const watchFiles = new SetupFailingArchiveWatchFiles(2);
