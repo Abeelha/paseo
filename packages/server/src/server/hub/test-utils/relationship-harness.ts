@@ -922,6 +922,10 @@ export class HubRelationshipHarness {
     };
   }
 
+  pathsReferToSameLocation(left: string, right: string): boolean {
+    return this.comparablePath(left) === this.comparablePath(right);
+  }
+
   async createBranch(branch: string): Promise<void> {
     await execFileAsync("git", ["-C", this.root, "branch", branch]);
   }

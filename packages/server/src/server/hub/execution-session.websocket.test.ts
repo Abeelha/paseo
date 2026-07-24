@@ -232,7 +232,7 @@ test("archiving an execution in a reused worktree leaves the existing workspace 
   );
 
   expect(response).toMatchObject({ success: true, error: null });
-  expect(reused.payload.agent?.cwd).toBe(worktreeCwd);
+  expect(hub.pathsReferToSameLocation(reused.payload.agent!.cwd, worktreeCwd)).toBe(true);
   expect(await hub.worktreeState(worktreeCwd)).toEqual({ exists: true, listed: true });
   expect(await hub.agentRemainsAvailable(original.payload.agentId!)).toBe(true);
   expect(await hub.ownedAgentArchivedAt(reused.payload.agentId!)).toEqual(expect.any(String));
