@@ -122,9 +122,10 @@ export class DaemonExecutions implements HubExecutionAgents {
     if (pending) return pending;
 
     const previous = this.controlTails.get(executionKey) ?? Promise.resolve();
+    const authorityGeneration = this.authorityGeneration;
     const control = previous
       .catch(() => undefined)
-      .then(() => this.controlOwnedExecution(owner, input));
+      .then(() => this.controlOwnedExecution(owner, input, authorityGeneration));
     this.pendingControlActions.set(actionKey, control);
     this.controlTails.set(executionKey, control);
     const release = () => {
@@ -194,6 +195,9 @@ export class DaemonExecutions implements HubExecutionAgents {
         owner,
         onWorktreeCreated: (worktree) => {
           createdWorktree = worktree;
+          if (worktree.created) {
+            owner.createdWorkspaceId = worktree.workspace.workspaceId;
+          }
         },
         onCreated: (created) => {
           createdAgentId = created.agentId;
@@ -233,15 +237,15 @@ export class DaemonExecutions implements HubExecutionAgents {
   private async controlOwnedExecution(
     owner: DaemonAgentOwner,
     input: HubExecutionControlInput,
+    authorityGeneration: number,
   ): Promise<void> {
-    if (!this.authorityActive) {
-      throw new Error("Hub relationship authority is no longer active");
-    }
+    this.requireAuthority(authorityGeneration, "execution control");
     const record = await this.agentStorage.findByDaemonExecution(owner);
     if (!record) {
       throw new Error(`Hub execution not found: ${input.executionId}`);
     }
-    this.requireOwner(record);
+    const storedOwner = this.requireOwner(record);
+    this.requireAuthority(authorityGeneration, "execution control");
 
     if (input.action === "interrupt") {
       if (!record.archivedAt && this.agentManager.getAgent(record.id)) {
@@ -250,16 +254,18 @@ export class DaemonExecutions implements HubExecutionAgents {
       return;
     }
 
-    const workspace = record.workspaceId
+    const workspace = storedOwner.createdWorkspaceId
       ? (await this.options.listActiveWorkspaces()).find(
-          (candidate) => candidate.workspaceId === record.workspaceId,
+          (candidate) => candidate.workspaceId === storedOwner.createdWorkspaceId,
         )
       : undefined;
 
     if (!record.archivedAt) {
+      this.requireAuthority(authorityGeneration, "execution control");
       await this.options.archiveAgent(record.id);
     }
     if (workspace?.isPaseoOwnedWorktree) {
+      this.requireAuthority(authorityGeneration, "execution control");
       await this.options.archiveWorkspace(workspace.workspaceId, input.requestId);
     }
   }
@@ -268,9 +274,9 @@ export class DaemonExecutions implements HubExecutionAgents {
     return this.projectRecord(record);
   }
 
-  private requireAuthority(authorityGeneration: number): void {
+  private requireAuthority(authorityGeneration: number, operation = "agent creation"): void {
     if (!this.authorityActive || authorityGeneration !== this.authorityGeneration) {
-      throw new Error("Hub relationship authority ended during agent creation");
+      throw new Error(`Hub relationship authority ended during ${operation}`);
     }
   }
 

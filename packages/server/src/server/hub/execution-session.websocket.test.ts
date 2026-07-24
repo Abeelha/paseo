@@ -186,6 +186,40 @@ test("a sibling workspace keeps an archived execution's worktree directory alive
   expect(await hub.ownedAgentArchivedAt(created.payload.agentId!)).toEqual(expect.any(String));
 }, 20_000);
 
+test("archiving an execution in a reused worktree leaves the existing workspace intact", async () => {
+  const hub = await launchRelationship();
+  const worktree = {
+    mode: "branch-off" as const,
+    newBranch: "hub-reused-worktree",
+    base: "main",
+  };
+  hub.beginOwnedCreate("original-worktree-create", "execution-original-worktree", {
+    worktree,
+    prompt: "respond with exactly: original complete",
+  });
+  const original = await hub.ownedCreateResult("original-worktree-create");
+  const worktreeCwd = hub.latestCreatedCwd()!;
+  await hub.ownedTurnCompletion(original.payload.agentId!);
+
+  hub.beginOwnedCreate("reused-worktree-create", "execution-reused-worktree", {
+    worktree,
+    prompt: "sleep 30",
+  });
+  const reused = await hub.ownedCreateResult("reused-worktree-create");
+  await hub.ownedRunningUpdate(reused.payload.agentId!);
+
+  const response = await hub.archiveExecution(
+    "execution-reused-worktree",
+    "archive-reused-worktree",
+  );
+
+  expect(response).toMatchObject({ success: true, error: null });
+  expect(reused.payload.agent?.cwd).toBe(worktreeCwd);
+  expect(await hub.worktreeState(worktreeCwd)).toEqual({ exists: true, listed: true });
+  expect(await hub.agentRemainsAvailable(original.payload.agentId!)).toBe(true);
+  expect(await hub.ownedAgentArchivedAt(reused.payload.agentId!)).toEqual(expect.any(String));
+}, 20_000);
+
 test("Hub resolves persisted execution ownership after daemon restart", async () => {
   const hub = await launchRelationship();
   hub.beginOwnedCreate("restart-create", "execution-restart", {
