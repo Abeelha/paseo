@@ -121,7 +121,10 @@ export class DaemonExecutions implements HubExecutionAgents {
     const pending = this.pendingControlActions.get(actionKey);
     if (pending) return pending;
 
-    const previous = this.controlTails.get(executionKey) ?? Promise.resolve();
+    const previous =
+      this.controlTails.get(executionKey) ??
+      this.pendingCreates.get(executionKey)?.then(() => undefined) ??
+      Promise.resolve();
     const authorityGeneration = this.authorityGeneration;
     const control = previous
       .catch(() => undefined)

@@ -707,12 +707,24 @@ export class HubRelationshipHarness {
     action: HubExecutionControlAction,
     requestId = `${action}-${executionId}`,
   ): Promise<HubExecutionControlResponse["payload"]> {
+    this.beginExecutionControl(requestId, executionId, action);
+    return this.executionControlResult(requestId);
+  }
+
+  beginExecutionControl(
+    requestId: string,
+    executionId: string,
+    action: HubExecutionControlAction,
+  ): void {
     this.latestSocket().socket.receive({
       type: "hub.execution.control.request",
       requestId,
       executionId,
       action,
     });
+  }
+
+  async executionControlResult(requestId: string): Promise<HubExecutionControlResponse["payload"]> {
     const response = (await this.latestSocket().socket.messageFor(
       requestId,
     )) as HubExecutionControlResponse;
