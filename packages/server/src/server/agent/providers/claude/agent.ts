@@ -478,6 +478,9 @@ interface ClaudeOptionsLogSummary {
 const MAX_RECENT_STDERR_CHARS = 4000;
 const STDERR_FLUSH_WAIT_MS = 150;
 const STDERR_FLUSH_POLL_INTERVAL_MS = 10;
+// Grace window after an unexpected Claude process exit before failing the
+// active turn, so a terminal result already buffered in the pump can win.
+const CHILD_EXIT_TURN_FAIL_GRACE_MS = 2_000;
 
 function summarizeClaudeOptionsForLog(options: ClaudeOptions): ClaudeOptionsLogSummary {
   const systemPromptRaw = options.systemPrompt;
@@ -2833,6 +2836,22 @@ class ClaudeAgentSession implements AgentSession {
   }
 
   private async ensureQuery(): Promise<Query> {
+    // A cached query whose process already exited would accept input.push()
+    // but every ProcessTransport write fails, leaving turns active forever.
+    // Force a relaunch (which resumes claudeSessionId) instead.
+    if (this.query && !this.queryRestartNeeded && this.hasChildProcessExited()) {
+      this.logger.warn(
+        {
+          agentId: this.agentId,
+          provider: "claude",
+          sessionId: this.claudeSessionId,
+          exitCode: this.childProcess?.exitCode ?? null,
+          signalCode: this.childProcess?.signalCode ?? null,
+        },
+        "Claude process exited behind a cached query; restarting query",
+      );
+      this.queryRestartNeeded = true;
+    }
     if (this.query && !this.queryRestartNeeded) {
       return this.query;
     }
@@ -2883,6 +2902,7 @@ class ClaudeAgentSession implements AgentSession {
         queryFactory: this.queryFactory,
         onChildProcess: (child) => {
           this.childProcess = child;
+          this.watchChildProcessExit(child);
         },
       },
     );
@@ -3208,6 +3228,59 @@ class ClaudeAgentSession implements AgentSession {
 
   private getRecentStderrDiagnostic(): string | undefined {
     return this.recentStderr.trim() || undefined;
+  }
+
+  private hasChildProcessExited(): boolean {
+    const child = this.childProcess;
+    if (!child) {
+      return false;
+    }
+    return typeof child.exitCode === "number" || typeof child.signalCode === "string";
+  }
+
+  private watchChildProcessExit(child: ChildProcess): void {
+    child.once("exit", (code, signal) => {
+      if (this.closed || this.childProcess !== child || !this.query) {
+        return;
+      }
+      // The stream-json process is expected to outlive turns. Once it exits,
+      // the cached query's transport is dead: input.push() still succeeds but
+      // nothing is delivered, so an active turn would never reach a terminal
+      // event and clients keep showing the agent as running.
+      this.queryRestartNeeded = true;
+      void this.failActiveTurnsAfterChildExit(code, signal).catch((error) => {
+        this.logger.warn(
+          { err: error, agentId: this.agentId },
+          "Failed to settle turns after Claude process exit",
+        );
+      });
+    });
+  }
+
+  private async failActiveTurnsAfterChildExit(
+    code: number | null,
+    signal: NodeJS.Signals | null,
+  ): Promise<void> {
+    const deadline = Date.now() + CHILD_EXIT_TURN_FAIL_GRACE_MS;
+    while (Date.now() < deadline) {
+      if (this.closed || (!this.activeForegroundTurnId && !this.autonomousTurn)) {
+        return;
+      }
+      await new Promise((resolve) => setTimeout(resolve, STDERR_FLUSH_POLL_INTERVAL_MS));
+    }
+    if (this.closed || (!this.activeForegroundTurnId && !this.autonomousTurn)) {
+      return;
+    }
+    const base = `Claude process exited with code ${code ?? "unknown"}${
+      signal ? ` (terminated by signal ${signal})` : ""
+    }`;
+    await this.awaitRecentStderrAfterProcessExit(new Error(base));
+    const diagnostic = this.getRecentStderrDiagnostic();
+    this.logger.warn(
+      { agentId: this.agentId, provider: "claude", exitCode: code, signalCode: signal },
+      "Failing active Claude turn after unexpected process exit",
+    );
+    this.failActiveTurns(diagnostic ? `${base}\n${diagnostic}` : base);
   }
 
   private async awaitRecentStderrAfterProcessExit(error: unknown): Promise<void> {
