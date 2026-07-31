@@ -64,13 +64,27 @@ function getMeterColors(
   theme: ReturnType<typeof useUnistyles>["theme"],
 ): { progress: string; track: string } {
   const track = theme.colors.surface3;
+  // Distinct colour per band so context pressure is readable at a glance:
+  // green = plenty of room, amber = start planning a /compact, red = compact now.
   if (percentage > 90) {
     return { progress: theme.colors.destructive, track };
   }
   if (percentage >= 70) {
     return { progress: theme.colors.palette.amber[500], track };
   }
-  return { progress: theme.colors.foregroundMuted, track };
+  if (percentage >= 50) {
+    return { progress: theme.colors.palette.yellow[400], track };
+  }
+  return { progress: theme.colors.palette.green[500], track };
+}
+
+// The label tracks the ring colour so the number itself signals the band, instead
+// of always rendering in muted grey.
+function getLabelColor(
+  percentage: number,
+  theme: ReturnType<typeof useUnistyles>["theme"],
+): string {
+  return getMeterColors(percentage, theme).progress;
 }
 
 function getMeterGeometry(showPercentage: boolean, glyphSize?: number) {
@@ -153,7 +167,7 @@ export function ContextWindowMeter({
             strokeWidth={geometry.strokeWidth}
           />
         </Svg>
-        {showPercentage ? <View style={styles.skeletonLabel} /> : null}
+        {showPercentage ? <Text style={styles.percentageLabel}>0%</Text> : null}
       </View>
     );
   }
@@ -212,7 +226,11 @@ export function ContextWindowMeter({
             />
           </Svg>
           {showPercentage ? (
-            <Text style={styles.percentageLabel}>{`${roundedPercentage}%`}</Text>
+            <Text
+              style={[styles.percentageLabel, { color: getLabelColor(clampedPercentage, theme) }]}
+            >
+              {`${roundedPercentage}%`}
+            </Text>
           ) : null}
         </Pressable>
       </TooltipTrigger>
@@ -263,12 +281,6 @@ const styles = StyleSheet.create((theme) => ({
     color: theme.colors.foregroundMuted,
     fontSize: theme.fontSize.sm,
     fontWeight: theme.fontWeight.normal,
-  },
-  skeletonLabel: {
-    width: 22,
-    height: theme.fontSize.sm,
-    borderRadius: theme.borderRadius.full,
-    backgroundColor: theme.colors.surface3,
   },
   tooltipContent: {
     gap: theme.spacing[1.5],

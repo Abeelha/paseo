@@ -1811,7 +1811,12 @@ export function Composer({
     agentState.contextWindowUsedTokens,
   );
 
-  const contextWindowPending = agentState.status === "initializing" || isAgentRunning;
+  // Keep the meter mounted for any live agent, not only while a turn is running.
+  // Without this the ring vanishes between turns, which is exactly when you want
+  // to read it to decide on /compact.
+  // (Upstream narrowed this to `initializing || isAgentRunning`; we deliberately
+  // keep the wider condition so the meter never disappears.)
+  const contextWindowPending = hasAgent;
   const contextWindowMeterGlyphSize = isCompactLayout ? ICON_SIZE.md : buttonIconSize;
 
   const contextWindowMeter = useMemo(
@@ -1820,7 +1825,9 @@ export function Composer({
         contextWindowMaxTokens,
         contextWindowUsedTokens,
         agentState.totalCostUsd,
-        false,
+        // always render the numeric percentage next to the ring, so context
+        // pressure is readable at a glance without hovering for the tooltip
+        true,
         serverId,
         agentState.provider,
         contextWindowPending,
