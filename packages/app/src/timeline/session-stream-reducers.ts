@@ -1544,12 +1544,28 @@ function processTimelineSequencingGate(input: {
         : [],
     };
   }
-  if (decision === "drop_epoch" && seq === 1) {
+  if (decision === "drop_epoch") {
+    // A new epoch means the daemon rebuilt this agent's session (resume from
+    // persistence, provider restart, query relaunch). seq === 1 is the clean
+    // case: adopt the new epoch and reset the live timeline.
+    if (seq === 1) {
+      return {
+        ...base,
+        nextTimelineCursor: { epoch, startSeq: seq, endSeq: seq },
+        cursorChanged: true,
+        resetLiveTimeline: true,
+      };
+    }
+    // seq > 1 means we joined the new epoch mid-stream (earlier events were
+    // coalesced, or the epoch rolled during an active turn). Previously this
+    // fell through and dropped the event with NO recovery: the cursor stayed on
+    // the dead epoch, so every later event was dropped too and the UI froze
+    // until a manual reload. Refetch from the server instead so the timeline
+    // re-syncs on its own.
     return {
       ...base,
-      nextTimelineCursor: { epoch, startSeq: seq, endSeq: seq },
-      cursorChanged: true,
-      resetLiveTimeline: true,
+      shouldApplyStreamEvent: false,
+      sideEffects: [{ type: "catch_up", cursor: { epoch, endSeq: Math.max(0, seq - 1) } }],
     };
   }
   return {

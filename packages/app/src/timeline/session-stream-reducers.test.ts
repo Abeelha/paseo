@@ -3605,7 +3605,7 @@ describe("processAgentStreamEvent", () => {
     expect(result.sideEffects).toEqual([]);
   });
 
-  it("drops timeline event with epoch mismatch", () => {
+  it("drops timeline event with epoch mismatch but requests a catch-up", () => {
     const existingCursor: TimelineCursor = {
       epoch: "epoch-1",
       startSeq: 1,
@@ -3620,10 +3620,50 @@ describe("processAgentStreamEvent", () => {
       currentCursor: existingCursor,
     });
 
+    // The event itself cannot be applied: we do not know where it sits in the
+    // new epoch. But we must refetch, otherwise the cursor stays pinned to the
+    // dead epoch and every later event is dropped too (frozen UI until reload).
     expect(result.cursorChanged).toBe(false);
     expect(result.changedTail).toBe(false);
     expect(result.changedHead).toBe(false);
-    expect(result.sideEffects).toEqual([]);
+    expect(result.sideEffects).toEqual([
+      { type: "catch_up", cursor: { epoch: "epoch-2", endSeq: 5 } },
+    ]);
+  });
+
+  it("recovers instead of freezing when an epoch rolls mid-stream", () => {
+    // Regression: a daemon-side session rebuild (resume from persistence,
+    // provider restart) starts a new epoch. If the first event we see in that
+    // epoch is not seq 1, the old code dropped it with no recovery and the
+    // timeline stopped updating until a manual refresh.
+    let cursor: TimelineCursor | undefined = { epoch: "epoch-1", startSeq: 1, endSeq: 42 };
+
+    const first = processAgentStreamEvent({
+      ...baseStreamInput,
+      event: makeTimelineEvent("after epoch roll"),
+      seq: 7,
+      epoch: "epoch-2",
+      currentCursor: cursor,
+    });
+    expect(first.sideEffects).toEqual([
+      { type: "catch_up", cursor: { epoch: "epoch-2", endSeq: 6 } },
+    ]);
+
+    // After the catch-up refetch lands, the cursor sits on the new epoch and
+    // subsequent live events apply normally again.
+    cursor = { epoch: "epoch-2", startSeq: 1, endSeq: 7 };
+    const next = processAgentStreamEvent({
+      ...baseStreamInput,
+      event: makeTimelineEvent("live again"),
+      seq: 8,
+      epoch: "epoch-2",
+      currentCursor: cursor,
+    });
+    expect(next.cursorChanged).toBe(true);
+    expect(next.cursor).toEqual({ epoch: "epoch-2", startSeq: 1, endSeq: 8 });
+    expect(next.sideEffects).toEqual([]);
+    // streaming assistant text lands in the live head buffer, not the tail
+    expect(getAssistantTexts([...next.tail, ...next.head])).toEqual(["live again"]);
   });
 
   it("resets visible timeline when a new epoch starts at seq 1", () => {
