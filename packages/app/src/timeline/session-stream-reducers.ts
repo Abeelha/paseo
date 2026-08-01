@@ -366,10 +366,17 @@ function deriveResumeTailPolicy(input: {
 function shouldPreserveReplacementContinuity(input: {
   isResumeReplacement: boolean;
   resumePolicy: ResumeTailPolicy;
+  forwardEpochRolled: boolean;
   currentEpoch: string | undefined;
   responseEpoch: string;
   reset: boolean;
 }): boolean {
+  // A forward page whose epoch rolled replaces a dead epoch: nothing to carry over.
+  // Must be checked before the resume-replacement short-circuit below, since a
+  // rolled forward page is also treated as a resume replacement.
+  if (input.forwardEpochRolled) {
+    return false;
+  }
   if (input.isResumeReplacement && input.resumePolicy.kind === "replace") {
     return input.resumePolicy.preserveContinuity;
   }
@@ -1222,6 +1229,17 @@ function applyTimelineIncrementalPath(args: {
   };
 }
 
+function isForwardEpochRoll(
+  payload: ProcessTimelineResponseInput["payload"],
+  currentCursor: TimelineCursor | undefined,
+): boolean {
+  return (
+    payload.direction === "after" &&
+    currentCursor !== undefined &&
+    currentCursor.epoch !== payload.epoch
+  );
+}
+
 export function processTimelineResponse(
   input: ProcessTimelineResponseInput,
 ): ProcessTimelineResponseOutput {
@@ -1308,6 +1326,13 @@ export function processTimelineResponse(
     currentCursor,
     bootstrapReplace: replace,
   });
+  // A forward ("after") page whose epoch differs from the local cursor cannot be
+  // merged incrementally: acceptIncrementalTimelineUnits bails on the epoch
+  // mismatch and returns nothing, with no gap cursor and no side effect, so the
+  // cursor stays pinned to the dead epoch and the timeline never recovers. The
+  // "tail" path already treats this as a destructive replacement via
+  // deriveResumeTailPolicy; make the forward path symmetric.
+  const forwardEpochRolled = isForwardEpochRoll(payload, currentCursor);
   const discard = resumeTailPolicy.kind === "discard";
   let timelineResult: TimelinePathResult;
   if (discard) {
@@ -1334,8 +1359,8 @@ export function processTimelineResponse(
       currentCursor,
       toHydratedEvents,
     });
-  } else if (replace || resumeTailPolicy.kind === "replace") {
-    const isResumeReplacement = resumeTailPolicy.kind === "replace";
+  } else if (replace || resumeTailPolicy.kind === "replace" || forwardEpochRolled) {
+    const isResumeReplacement = resumeTailPolicy.kind === "replace" || forwardEpochRolled;
     timelineResult = applyTimelineReplacePath({
       timelineUnits,
       payload,
@@ -1348,6 +1373,7 @@ export function processTimelineResponse(
       preserveContinuity: shouldPreserveReplacementContinuity({
         isResumeReplacement,
         resumePolicy: resumeTailPolicy,
+        forwardEpochRolled,
         currentEpoch: currentCursor?.epoch,
         responseEpoch: payload.epoch,
         reset: payload.reset,

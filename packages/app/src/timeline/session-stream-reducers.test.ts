@@ -3370,7 +3370,12 @@ describe("processTimelineResponse", () => {
     });
   });
 
-  it("drops entries with epoch mismatch", () => {
+  it("adopts a forward page whose epoch rolled instead of dropping it", () => {
+    // Regression: a forward ("after") catch-up triggered by the drop_epoch
+    // recovery arrives stamped with the NEW epoch while the local cursor still
+    // points at the dead one. The incremental path bails on that mismatch and
+    // returns nothing, so the cursor stayed pinned forever and every later live
+    // event re-triggered another catch-up that was discarded the same way.
     const existingCursor: TimelineCursor = {
       epoch: "epoch-1",
       startSeq: 1,
@@ -3383,12 +3388,15 @@ describe("processTimelineResponse", () => {
       payload: {
         ...baseTimelineInput.payload,
         epoch: "epoch-2",
+        startCursor: { seq: 6 },
+        endCursor: { seq: 6 },
         entries: [makeTimelineEntry(6, "different epoch")],
       },
     });
 
-    expect(result.tail).toBe(baseTimelineInput.currentTail);
-    expect(result.cursorChanged).toBe(false);
+    expect(result.cursorChanged).toBe(true);
+    expect(result.cursor).toMatchObject({ epoch: "epoch-2" });
+    expect(getAssistantTexts([...result.tail, ...result.head])).toContain("different epoch");
   });
 
   it("resolves init when deferred matches direction", () => {
