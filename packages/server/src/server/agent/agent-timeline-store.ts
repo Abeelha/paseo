@@ -163,6 +163,15 @@ export class InMemoryAgentTimelineStore {
     return this.requireState(agentId).rows.map((row) => row.item);
   }
 
+  /**
+   * Row count without materialising the items. `getItems(id).length` allocates a
+   * full copy of every item just to read a number, which the 30s runtime-metrics
+   * sweep was doing for every agent on the daemon's event loop.
+   */
+  getItemCount(agentId: string): number {
+    return this.requireState(agentId).rows.length;
+  }
+
   getRows(agentId: string): AgentTimelineRow[] {
     return this.requireState(agentId).rows.map(cloneRow);
   }
