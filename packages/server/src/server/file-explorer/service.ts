@@ -1,4 +1,4 @@
-import { constants, promises as fs, type BigIntStats } from "fs";
+import { constants, promises as fs, realpathSync, type BigIntStats } from "fs";
 import type { FileHandle } from "fs/promises";
 import path from "path";
 import { randomUUID } from "crypto";
@@ -584,10 +584,16 @@ async function resolveScopedPath({
     throw new Error(ACCESS_OUTSIDE_WORKSPACE_MESSAGE);
   }
 
-  const realRoot = await fs.realpath(normalizedRoot);
+  // realpathSync.native, not the promise-based fs.realpath: on Windows the
+  // non-native variant echoes back whatever casing the caller passed instead of
+  // the true on-disk name. The file observer compares fs.watch's reported
+  // filename against this basename, so a casing mismatch silently swallowed
+  // every change event and the file pane went stale with no error and no
+  // recovery. fs/promises does not expose a .native variant, hence the sync call.
+  const realRoot = realpathSync.native(normalizedRoot);
 
   try {
-    const realPath = await fs.realpath(requestedPath);
+    const realPath = realpathSync.native(requestedPath);
     const realRelative = path.relative(realRoot, realPath);
     if (realRelative !== "" && (realRelative.startsWith("..") || path.isAbsolute(realRelative))) {
       throw new Error(ACCESS_OUTSIDE_WORKSPACE_MESSAGE);

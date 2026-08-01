@@ -47,6 +47,18 @@ const nodeDependencies: FileObserverDependencies = {
   clearInterval,
 };
 
+// Windows and macOS filesystems are case-insensitive, so fs.watch may report a
+// filename whose casing differs from the one we recorded when the file was
+// opened. Comparing exactly there silently discards every change event.
+const CASE_INSENSITIVE_FS = process.platform === "win32" || process.platform === "darwin";
+
+function matchesObservedBasename(filename: string, basename: string): boolean {
+  if (filename === basename) {
+    return true;
+  }
+  return CASE_INSENSITIVE_FS && filename.toLowerCase() === basename.toLowerCase();
+}
+
 export class FileObserver {
   private readonly dependencies: FileObserverDependencies;
   private readonly observed = new Map<string, ObservedFile>();
@@ -113,7 +125,7 @@ export class FileObserver {
       observed.watcher = this.dependencies.watchDirectory(
         directory,
         (filename) => {
-          if (filename === null || filename === observed.basename) {
+          if (filename === null || matchesObservedBasename(filename, observed.basename)) {
             this.scheduleRestat(target, observed);
           }
         },

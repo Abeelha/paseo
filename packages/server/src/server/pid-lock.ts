@@ -46,7 +46,16 @@ function isPidRunning(pid: number): boolean {
   try {
     process.kill(pid, 0);
     return true;
-  } catch {
+  } catch (err) {
+    // EPERM means the process is alive but owned by a security context we are
+    // not allowed to signal (on Windows: an elevated daemon probed from a
+    // non-elevated process, or vice versa). Treating that as "dead" lets
+    // acquirePidLock steal the lock and start a SECOND daemon against the same
+    // state directory. Mirrors isPidAlive in daemon-worker.ts and
+    // isProcessRunning in desktop/daemon-manager.ts, which both already do this.
+    if (typeof err === "object" && err !== null && "code" in err && err.code === "EPERM") {
+      return true;
+    }
     return false;
   }
 }
