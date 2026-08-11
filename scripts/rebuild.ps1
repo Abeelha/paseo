@@ -22,7 +22,7 @@ if ($LASTEXITCODE -ne 0) { throw "build:server failed" }
 
 Write-Host "==> typecheck (whole workspace)" -ForegroundColor Cyan
 npm run typecheck
-if ($LASTEXITCODE -ne 0) { throw "typecheck failed — see errors above" }
+if ($LASTEXITCODE -ne 0) { throw "typecheck failed - see errors above" }
 
 Write-Host ""
 Write-Host "Rebuild clean." -ForegroundColor Green
