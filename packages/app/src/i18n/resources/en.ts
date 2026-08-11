@@ -1010,6 +1010,16 @@ export const en = {
         serviceUnhealthy: "Service {{name}} unhealthy",
         creating: "Creating...",
       },
+      statusFile: {
+        on: "watchdog on",
+        onWithTick: "watchdog on · last tick {{time}}",
+        stale: "watchdog stale",
+        off: "watchdog off",
+        lastTick: "Last tick {{time}}",
+        nextTick: "Next tick {{time}}",
+        mode: "Mode {{mode}}",
+        ticksCompleted: "Ticks completed: {{count}}",
+      },
       actions: {
         menu: "Workspace actions",
         newWorkspace: "New workspace",

@@ -1011,6 +1011,16 @@ export const ja: TranslationResources = {
         serviceUnhealthy: "サービス {{name}} 異常",
         creating: "作成中...",
       },
+      statusFile: {
+        on: "ウォッチドッグ稼働中",
+        onWithTick: "ウォッチドッグ稼働中 · 最終ティック {{time}}",
+        stale: "ウォッチドッグ停滞",
+        off: "ウォッチドッグ停止",
+        lastTick: "最終ティック {{time}}",
+        nextTick: "次回ティック {{time}}",
+        mode: "モード {{mode}}",
+        ticksCompleted: "完了ティック数: {{count}}",
+      },
       actions: {
         menu: "ワークスペースアクション",
         newWorkspace: "新しいワークスペース",

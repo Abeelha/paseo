@@ -1030,6 +1030,16 @@ export const fr: TranslationResources = {
         serviceUnhealthy: "Service {{name}} en échec",
         creating: "Création...",
       },
+      statusFile: {
+        on: "watchdog actif",
+        onWithTick: "watchdog actif · dernier tick {{time}}",
+        stale: "watchdog obsolète",
+        off: "watchdog arrêté",
+        lastTick: "Dernier tick {{time}}",
+        nextTick: "Prochain tick {{time}}",
+        mode: "Mode {{mode}}",
+        ticksCompleted: "Ticks terminés : {{count}}",
+      },
       actions: {
         menu: "ActionsWorkspace",
         newWorkspace: "Nouvel espace de travail",

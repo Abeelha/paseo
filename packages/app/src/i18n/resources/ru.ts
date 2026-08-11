@@ -1022,6 +1022,16 @@ export const ru: TranslationResources = {
         serviceUnhealthy: "Сервис {{name}} неисправен",
         creating: "Создание...",
       },
+      statusFile: {
+        on: "watchdog включён",
+        onWithTick: "watchdog включён · последний тик {{time}}",
+        stale: "watchdog устарел",
+        off: "watchdog выключен",
+        lastTick: "Последний тик {{time}}",
+        nextTick: "Следующий тик {{time}}",
+        mode: "Режим {{mode}}",
+        ticksCompleted: "Завершено тиков: {{count}}",
+      },
       actions: {
         menu: "Действия Workspace",
         newWorkspace: "Новое рабочее пространство",

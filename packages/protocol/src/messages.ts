@@ -3243,6 +3243,29 @@ const WorkspaceGitHubRuntimePayloadSchema = z
   .optional()
   .nullable();
 
+export const WorkspaceStatusFileBadgeStateSchema = z.enum(["on", "stale", "off"]);
+export type WorkspaceStatusFileBadgeState = z.infer<typeof WorkspaceStatusFileBadgeStateSchema>;
+
+/**
+ * Projection of a workspace's optional on-disk status file (the `statusFile`
+ * path in the workspace registry). An external process keeps the file updated;
+ * the daemon polls it and reduces it to a badge state plus the fields the
+ * sidebar tooltip shows. Absent/null when no file is configured or the file is
+ * missing, unreadable, or fails the contract; that is a normal state, not an
+ * error.
+ */
+export const WorkspaceStatusFileStatePayloadSchema = z.object({
+  state: WorkspaceStatusFileBadgeStateSchema,
+  lastTickAt: z.string().nullable(),
+  nextTickAt: z.string().nullable(),
+  mode: z.string().nullable(),
+  ticksCompleted: z.number().nullable(),
+  latestRound: z.string().nullable(),
+  ledgerPath: z.string().nullable(),
+  displayTimezone: z.string().nullable(),
+});
+export type WorkspaceStatusFileStatePayload = z.infer<typeof WorkspaceStatusFileStatePayloadSchema>;
+
 export const WorkspaceDescriptorPayloadSchema = z
   .object({
     id: z.string(),
@@ -3292,6 +3315,9 @@ export const WorkspaceDescriptorPayloadSchema = z
       .nullable()
       .optional(),
     scripts: z.array(WorkspaceScriptPayloadSchema).default([]),
+    // Status-file badge projection; see WorkspaceStatusFileStatePayloadSchema.
+    // Old daemons omit it; absent and null both mean "no badge".
+    statusFileState: WorkspaceStatusFileStatePayloadSchema.nullable().optional(),
     gitRuntime: WorkspaceGitRuntimePayloadSchema,
     githubRuntime: WorkspaceGitHubRuntimePayloadSchema,
     // COMPAT(forge): added in v0.1.106, remove after 2026-12-27. The forge resolved

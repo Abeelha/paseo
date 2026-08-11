@@ -1007,6 +1007,16 @@ export const ko: TranslationResources = {
         serviceUnhealthy: "서비스 {{name}} 비정상",
         creating: "생성하는 중...",
       },
+      statusFile: {
+        on: "워치독 켜짐",
+        onWithTick: "워치독 켜짐 · 마지막 틱 {{time}}",
+        stale: "워치독 정체됨",
+        off: "워치독 꺼짐",
+        lastTick: "마지막 틱 {{time}}",
+        nextTick: "다음 틱 {{time}}",
+        mode: "모드 {{mode}}",
+        ticksCompleted: "완료된 틱: {{count}}",
+      },
       actions: {
         menu: "워크스페이스 작업",
         newWorkspace: "새 워크스페이스",

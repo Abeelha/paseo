@@ -1,3 +1,4 @@
+import type { WorkspaceStatusFileStatePayload } from "@getpaseo/protocol/messages";
 import type { PrHint } from "@/git/pr-hint";
 import type { SidebarChecksDisplay } from "@/components/sidebar/display-preferences/checks-display";
 import type { SidebarRowItems } from "@/components/sidebar/display-preferences/row-items";
@@ -13,7 +14,8 @@ export type MetaRowItem =
   | { kind: "host" }
   | { kind: "changeRequest"; hint: PrHint }
   | { kind: "checks"; summary: CheckSummary; label: boolean }
-  | { kind: "services"; summary: WorkspaceServiceSummary };
+  | { kind: "services"; summary: WorkspaceServiceSummary }
+  | { kind: "statusFile"; state: WorkspaceStatusFileStatePayload };
 
 /**
  * Which peers a row should draw, given what it knows and what the user left switched on.
@@ -29,10 +31,11 @@ export function selectMetaRowItems(input: {
   hasHostBadge: boolean;
   prHint: PrHint | null;
   serviceSummary: WorkspaceServiceSummary | null;
+  statusFileState?: WorkspaceStatusFileStatePayload | null;
   visible: SidebarRowItems;
   checksDisplay: SidebarChecksDisplay;
 }): MetaRowItem[] {
-  const { hasHostBadge, prHint, serviceSummary, visible, checksDisplay } = input;
+  const { hasHostBadge, prHint, serviceSummary, statusFileState, visible, checksDisplay } = input;
   const items: MetaRowItem[] = [];
 
   if (hasHostBadge) {
@@ -55,6 +58,13 @@ export function selectMetaRowItems(input: {
 
   if (serviceSummary && visible.services) {
     items.push({ kind: "services", summary: serviceSummary });
+  }
+
+  // Present exactly when the daemon projected a readable status file for this
+  // workspace; no preference gates it because configuring the file is itself
+  // the opt-in.
+  if (statusFileState) {
+    items.push({ kind: "statusFile", state: statusFileState });
   }
 
   return items;

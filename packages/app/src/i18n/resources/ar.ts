@@ -1000,6 +1000,16 @@ export const ar: TranslationResources = {
         serviceUnhealthy: "الخدمة {{name}} غير سليمة",
         creating: "جارٍ الإنشاء...",
       },
+      statusFile: {
+        on: "المراقب يعمل",
+        onWithTick: "المراقب يعمل · آخر نبضة {{time}}",
+        stale: "المراقب متوقف عن التحديث",
+        off: "المراقب متوقف",
+        lastTick: "آخر نبضة {{time}}",
+        nextTick: "النبضة التالية {{time}}",
+        mode: "الوضع {{mode}}",
+        ticksCompleted: "النبضات المكتملة: {{count}}",
+      },
       actions: {
         menu: "إجراءات Workspace",
         newWorkspace: "مساحة عمل جديدة",

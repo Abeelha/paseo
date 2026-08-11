@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { WorkspaceStatusFileStatePayload } from "@getpaseo/protocol/messages";
 import type { PrHint } from "@/git/pr-hint";
 import { DEFAULT_SIDEBAR_CHECKS_DISPLAY } from "@/components/sidebar/display-preferences/checks-display";
 import { DEFAULT_SIDEBAR_ROW_ITEMS } from "@/components/sidebar/display-preferences/row-items";
@@ -86,5 +87,29 @@ describe("selectMetaRowItems", () => {
   it("keeps a change request whose forge reports no checks", () => {
     const items = select({ prHint: { ...PR_HINT, checksStatus: undefined } });
     expect(kinds(items)).toEqual(["host", "changeRequest", "services"]);
+  });
+
+  it("draws the status-file badge last when the daemon projected one", () => {
+    const statusFileState: WorkspaceStatusFileStatePayload = {
+      state: "on",
+      lastTickAt: "2026-08-10T21:17:00Z",
+      nextTickAt: "2026-08-10T21:38:00Z",
+      mode: "idle",
+      ticksCompleted: 3,
+      latestRound: "#1 round",
+      ledgerPath: "/tmp/ledger.md",
+      displayTimezone: "America/Sao_Paulo",
+    };
+    const items = select({ statusFileState });
+    expect(kinds(items)).toEqual(["host", "changeRequest", "checks", "services", "statusFile"]);
+    expect(items.find((item) => item.kind === "statusFile")).toEqual({
+      kind: "statusFile",
+      state: statusFileState,
+    });
+  });
+
+  it("draws no status-file badge for a workspace with none configured", () => {
+    expect(kinds(select())).not.toContain("statusFile");
+    expect(kinds(select({ statusFileState: null }))).not.toContain("statusFile");
   });
 });

@@ -990,6 +990,16 @@ export const zhCN: TranslationResources = {
         serviceUnhealthy: "服务 {{name}} 异常",
         creating: "正在创建...",
       },
+      statusFile: {
+        on: "看门狗运行中",
+        onWithTick: "看门狗运行中 · 最近一次 {{time}}",
+        stale: "看门狗已失联",
+        off: "看门狗已停止",
+        lastTick: "最近一次 {{time}}",
+        nextTick: "下次 {{time}}",
+        mode: "模式 {{mode}}",
+        ticksCompleted: "已完成 {{count}} 次",
+      },
       actions: {
         menu: "Workspace 操作",
         newWorkspace: "新建 workspace",

@@ -51,6 +51,7 @@ export interface SidebarWorkspaceEntry extends SidebarStatusWorkspacePlacement {
   archiveUnpushedCommitCount: number | null;
   scripts: WorkspaceDescriptor["scripts"];
   hasRunningScripts: boolean;
+  statusFileState?: WorkspaceDescriptor["statusFileState"];
 }
 
 export interface SidebarProjectEntry {
@@ -179,6 +180,7 @@ export function createSidebarWorkspaceEntry(input: {
     archiveUnpushedCommitCount: input.workspace.gitRuntime?.aheadOfOrigin ?? null,
     scripts: input.workspace.scripts,
     hasRunningScripts: input.workspace.scripts.some((script) => script.lifecycle === "running"),
+    statusFileState: input.workspace.statusFileState ?? null,
   };
 }
 
@@ -407,6 +409,15 @@ function areSidebarWorkspaceEntriesEqual(
   const keys = Object.keys(left) as Array<keyof SidebarWorkspaceEntry>;
   if (keys.length !== Object.keys(right).length) return false;
   return keys.every((key) => {
+    if (key === "statusFileState") {
+      // Rebuilt object on every descriptor refresh; compare by value so an
+      // unchanged badge does not re-render the row.
+      return (
+        left.statusFileState === right.statusFileState ||
+        JSON.stringify(left.statusFileState ?? null) ===
+          JSON.stringify(right.statusFileState ?? null)
+      );
+    }
     if (key !== "prHint") return Object.is(left[key], right[key]);
     const leftHint = left.prHint;
     const rightHint = right.prHint;

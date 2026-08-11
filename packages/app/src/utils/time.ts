@@ -145,6 +145,45 @@ export function formatMessageTimestamp(date: Date, now: Date = new Date()): stri
   return `${dateLabel}, ${time}`;
 }
 
+// Keyed by IANA timezone so a sidebar full of rows sharing one zone builds the
+// formatter once. Same hourCycle carry-over as getTimeFormatter above.
+const cachedZonedTimeFormatters = new Map<string, Intl.DateTimeFormat>();
+function getZonedTimeFormatter(timeZone: string | null): Intl.DateTimeFormat {
+  const key = timeZone ?? "";
+  const cached = cachedZonedTimeFormatters.get(key);
+  if (cached) return cached;
+  const resolved = new Intl.DateTimeFormat(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+  }).resolvedOptions();
+  const formatter = new Intl.DateTimeFormat(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+    hourCycle: resolved.hourCycle,
+    ...(timeZone ? { timeZone } : {}),
+  });
+  cachedZonedTimeFormatters.set(key, formatter);
+  return formatter;
+}
+
+/**
+ * Short clock time ("18:38" / "6:38 PM") for an ISO timestamp, rendered in the
+ * given IANA timezone. Falls back to the device timezone when the zone is
+ * absent or invalid, and returns null for an unparsable timestamp; the caller
+ * decides what an unknown time looks like.
+ */
+export function formatShortTimeInZone(iso: string | null, timeZone: string | null): string | null {
+  if (!iso) return null;
+  const parsed = new Date(iso);
+  if (Number.isNaN(parsed.getTime())) return null;
+  try {
+    return getZonedTimeFormatter(timeZone).format(parsed);
+  } catch {
+    // Invalid IANA name: fall back to the device timezone rather than throwing.
+    return getZonedTimeFormatter(null).format(parsed);
+  }
+}
+
 /**
  * Format a duration as a compact human-readable string.
  * - 0-60s: whole seconds ("47s")

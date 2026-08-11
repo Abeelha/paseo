@@ -1022,6 +1022,16 @@ export const ptBR: TranslationResources = {
         serviceUnhealthy: "Serviço {{name}} com falha",
         creating: "Criando...",
       },
+      statusFile: {
+        on: "watchdog ativo",
+        onWithTick: "watchdog ativo · último tick {{time}}",
+        stale: "watchdog obsoleto",
+        off: "watchdog desligado",
+        lastTick: "Último tick {{time}}",
+        nextTick: "Próximo tick {{time}}",
+        mode: "Modo {{mode}}",
+        ticksCompleted: "Ticks concluídos: {{count}}",
+      },
       actions: {
         menu: "Ações do workspace",
         newWorkspace: "Novo workspace",

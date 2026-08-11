@@ -195,6 +195,7 @@ export const SidebarWorkspaceRowContent = memo(function SidebarWorkspaceRowConte
             hostBadge={hostBadge ?? null}
             prHint={workspace.prHint}
             serviceSummary={serviceSummary}
+            statusFileState={workspace.statusFileState}
           />
         </View>
       </View>

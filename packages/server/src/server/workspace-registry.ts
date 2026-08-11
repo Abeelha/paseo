@@ -92,6 +92,15 @@ const PersistedWorkspaceRecordSchema = z.object({
     .nullable()
     .optional()
     .transform((value) => value ?? null),
+  // Optional path to a JSON status file an external process keeps updated for
+  // this workspace. When set, the daemon polls the file and projects a status
+  // badge into the workspace descriptor (see workspace-status-file.ts). Null
+  // means no status file and therefore no badge.
+  statusFile: z
+    .string()
+    .nullable()
+    .optional()
+    .transform((value) => value ?? null),
 });
 
 export type PersistedProjectRecord = z.infer<typeof PersistedProjectRecordSchema>;

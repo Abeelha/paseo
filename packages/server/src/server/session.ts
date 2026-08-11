@@ -156,6 +156,10 @@ import {
   type WorkspaceGitObserverService,
 } from "./session/workspace-git-observer/workspace-git-observer-service.js";
 import {
+  createWorkspaceStatusFileObserver,
+  type WorkspaceStatusFileObserver,
+} from "./workspace-status-file.js";
+import {
   createAgentStructuredTextGeneration,
   createGitMetadataGenerator,
 } from "./session/checkout/git-metadata-generator.js";
@@ -668,6 +672,7 @@ export class Session {
   private readonly workspaceSetupSnapshots: Map<string, WorkspaceSetupSnapshot>;
   private readonly workspaceSetupRuntime: WorkspaceSetupRuntime;
   private readonly workspaceGitObserver: WorkspaceGitObserverService;
+  private readonly workspaceStatusFileObserver: WorkspaceStatusFileObserver;
   private readonly workspaceDirectory: WorkspaceDirectory;
   private readonly voiceSession: VoiceSession;
   private readonly checkoutSession: CheckoutSession;
@@ -830,6 +835,12 @@ export class Session {
         this.emitWorkspaceUpdateForWorkspaceId(workspaceId),
       emitStatusUpdate: (cwd, snapshot) => this.checkoutSession.emitStatusUpdate(cwd, snapshot),
       onBranchChanged,
+      logger: this.sessionLogger,
+    });
+    this.workspaceStatusFileObserver = createWorkspaceStatusFileObserver({
+      listWorkspaces: () => this.workspaceRegistry.list(),
+      emitWorkspaceUpdateForWorkspaceId: (workspaceId) =>
+        this.emitWorkspaceUpdateForWorkspaceId(workspaceId),
       logger: this.sessionLogger,
     });
     this.chatScheduleLoopSession = new ChatScheduleLoopSession({
@@ -4467,6 +4478,7 @@ export class Session {
       activityAt: null,
       diffStat,
       scripts: this.buildWorkspaceScriptPayloadSnapshot(workspace, resolvedProjectRecord),
+      statusFileState: this.workspaceStatusFileObserver.getState(workspace.workspaceId),
       ...(resolvedProjectRecord
         ? {
             project: await this.buildProjectPlacementForWorkspace(workspace, resolvedProjectRecord),
@@ -6973,6 +6985,7 @@ export class Session {
     this.checkoutSession.cleanup();
 
     this.workspaceGitObserver.dispose();
+    this.workspaceStatusFileObserver.dispose();
     this.workspaceFilesSession.dispose();
   }
 }

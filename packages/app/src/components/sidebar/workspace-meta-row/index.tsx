@@ -20,6 +20,8 @@ import { CheckIndicator } from "./check-indicator";
 import type { CheckSummary, CheckSummaryState } from "./check-summary";
 import { selectMetaRowItems, type MetaRowItem } from "./meta-items";
 import { workspaceServiceLabelKey, type WorkspaceServiceSummary } from "./service-summary";
+import { StatusFileItem } from "./status-file-item";
+import type { WorkspaceStatusFileStatePayload } from "@getpaseo/protocol/messages";
 
 export {
   selectWorkspaceServiceSummary,
@@ -58,16 +60,19 @@ export function WorkspaceMetaRow({
   hostBadge,
   prHint,
   serviceSummary,
+  statusFileState = null,
 }: {
   hostBadge: HostBadgeModel | null;
   prHint: PrHint | null;
   serviceSummary: WorkspaceServiceSummary | null;
+  statusFileState?: WorkspaceStatusFileStatePayload | null;
 }) {
   const { rowItems, checksDisplay } = useSidebarMetaPreferences();
   const items = selectMetaRowItems({
     hasHostBadge: hostBadge !== null,
     prHint,
     serviceSummary,
+    statusFileState,
     visible: rowItems,
     checksDisplay,
   });
@@ -101,6 +106,9 @@ function MetaItemNode({
   }
   if (item.kind === "checks") {
     return <ChecksItem summary={item.summary} label={item.label} />;
+  }
+  if (item.kind === "statusFile") {
+    return <StatusFileItem state={item.state} />;
   }
   return <ServiceItem summary={item.summary} />;
 }
