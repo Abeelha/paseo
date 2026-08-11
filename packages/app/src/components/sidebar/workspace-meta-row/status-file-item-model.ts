@@ -14,10 +14,15 @@ export function selectStatusFileItemPresentation(state: WorkspaceStatusFileState
 } {
   const time = formatShortTimeInZone(state.lastTickAt, state.displayTimezone);
   if (state.state === "on") {
-    return { labelKey: time ? "workspace.statusFile.onWithTick" : "workspace.statusFile.on", time };
+    return {
+      labelKey: time
+        ? "sidebar.workspace.statusFile.onWithTick"
+        : "sidebar.workspace.statusFile.on",
+      time,
+    };
   }
   if (state.state === "stale") {
-    return { labelKey: "workspace.statusFile.stale", time };
+    return { labelKey: "sidebar.workspace.statusFile.stale", time };
   }
-  return { labelKey: "workspace.statusFile.off", time };
+  return { labelKey: "sidebar.workspace.statusFile.off", time };
 }

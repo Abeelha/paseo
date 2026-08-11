@@ -47,22 +47,22 @@ export function StatusFileItem({ state }: { state: WorkspaceStatusFileStatePaylo
           <Text style={styles.tooltipTitle}>{label}</Text>
           {presentation.time ? (
             <Text style={styles.tooltipDetail}>
-              {t("workspace.statusFile.lastTick", { time: presentation.time })}
+              {t("sidebar.workspace.statusFile.lastTick", { time: presentation.time })}
             </Text>
           ) : null}
           {nextTick ? (
             <Text style={styles.tooltipDetail}>
-              {t("workspace.statusFile.nextTick", { time: nextTick })}
+              {t("sidebar.workspace.statusFile.nextTick", { time: nextTick })}
             </Text>
           ) : null}
           {state.mode ? (
             <Text style={styles.tooltipDetail}>
-              {t("workspace.statusFile.mode", { mode: state.mode })}
+              {t("sidebar.workspace.statusFile.mode", { mode: state.mode })}
             </Text>
           ) : null}
           {state.ticksCompleted !== null ? (
             <Text style={styles.tooltipDetail}>
-              {t("workspace.statusFile.ticksCompleted", { count: state.ticksCompleted })}
+              {t("sidebar.workspace.statusFile.ticksCompleted", { count: state.ticksCompleted })}
             </Text>
           ) : null}
           {state.latestRound ? (
