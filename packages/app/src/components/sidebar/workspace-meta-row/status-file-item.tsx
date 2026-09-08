@@ -101,19 +101,19 @@ const styles = StyleSheet.create((theme) => ({
   },
   labelOn: {
     color: theme.colors.statusSuccess,
-    fontSize: theme.fontSize.xs,
+    fontSize: theme.fontSize.sm,
     lineHeight: 16,
     flexShrink: 1,
   },
   labelStale: {
     color: theme.colors.statusWarning,
-    fontSize: theme.fontSize.xs,
+    fontSize: theme.fontSize.sm,
     lineHeight: 16,
     flexShrink: 1,
   },
   labelOff: {
     color: theme.colors.foregroundMuted,
-    fontSize: theme.fontSize.xs,
+    fontSize: theme.fontSize.sm,
     lineHeight: 16,
     flexShrink: 1,
   },
@@ -123,11 +123,11 @@ const styles = StyleSheet.create((theme) => ({
   },
   tooltipTitle: {
     color: theme.colors.foreground,
-    fontSize: theme.fontSize.xs,
+    fontSize: theme.fontSize.sm,
     fontWeight: "600",
   },
   tooltipDetail: {
     color: theme.colors.foregroundMuted,
-    fontSize: theme.fontSize.xs,
+    fontSize: theme.fontSize.sm,
   },
 }));

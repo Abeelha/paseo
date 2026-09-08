@@ -6,7 +6,7 @@ Thank you for taking the time to contribute to Paseo.
 
 Paseo is an opinionated product, built on freedom and flexibility: any agent provider, any device, running on your own machine. It is meant to be composable, so you can build the workflow you want. Read more about the product vision [here](docs/product.md).
 
-Given Paseo's scope, contributing to to it takes a lot of context that is very hard to transfer. That's why product, design, architecture, and workflow decisions are currently all made by the maintainer.
+Given Paseo's scope, contributing to it takes a lot of context that is very hard to transfer. That's why product, design, architecture, and workflow decisions are currently all made by the maintainer.
 
 I pick what to build based on whether it fits the product, how many workflows it improves, whether it keeps things composable, whether we can hold the quality bar, and whether I want to build it.
 
@@ -37,6 +37,8 @@ A discussion also lets other people add their own version of the same problem, a
 Due to the volume and my limited bandwidth, I may not participate in all the discussions, if something gains interest it will make it's way to me.
 
 ## Pull requests
+
+For plugin changes, start with the [SDK import boundaries](docs/plugins.md#sdk-import-boundaries).
 
 Anyone can open a pull request, but there are no guarantees of it getting merged, only submit one if you're okay with it being closed.
 
@@ -72,8 +74,8 @@ Here is the criteria I use to decide:
 - PRs that were explicitly approved in a discussion are preferred.
 - Unsolicited PR can be closed without a detailed review.
 - Your PR can be narrowed, refactored, or redesigned.
-- Your PR might be accpeted but not merged immediately.
-- You wil be attributed for your work in the changelog, even if I redesign your PR
+- Your PR might be accepted but not merged immediately.
+- You will be attributed for your work in the changelog, even if I redesign your PR
 
 ## QA evidence
 

@@ -1,4 +1,7 @@
 import { expect, test, type Page } from "../support/fixtures";
+import type { DaemonClient } from "@getpaseo/client/internal/daemon-client";
+import { connectDaemonClient } from "../support/helpers/daemon-client-loader";
+import type { FormPreferences } from "@/create-agent-preferences/preferences";
 import { gotoAppShell } from "../support/helpers/app";
 import { daemonWsRoutePattern } from "../support/helpers/daemon-port";
 import { openAgentRoute } from "../support/helpers/mock-agent";
@@ -10,7 +13,6 @@ import {
 import { expectNoTruncation } from "../support/helpers/no-truncation";
 import { escapeRegex } from "../support/helpers/regex";
 import { seedWorkspace } from "../support/helpers/seed-client";
-import { getServerId } from "../support/helpers/server-id";
 import { waitForSidebarHydration } from "../support/helpers/workspace-ui";
 
 const CREATE_AGENT_PREFERENCES_KEY = "@paseo:create-agent-preferences";
@@ -49,31 +51,52 @@ function getSessionMessage(message: WebSocketMessage): Record<string, unknown> |
   return maybeEnvelope.message as Record<string, unknown>;
 }
 
-async function seedCodexDefaultPermissionPreferences(page: Page, serverId: string): Promise<void> {
-  await page.addInitScript(
-    ({ preferencesKey, serverId: seededServerId }) => {
-      localStorage.setItem(
-        preferencesKey,
-        JSON.stringify({
-          serverId: seededServerId,
-          provider: "codex",
-          providerPreferences: {
-            codex: {
-              model: "gpt-5.4-mini",
-              mode: "auto",
-              thinkingByModel: {
-                "gpt-5.4-mini": "low",
+async function seedCodexDefaultPermissionPreferences(page: Page, cwd: string): Promise<string> {
+  const client = await connectDaemonClient<DaemonClient>({
+    clientIdPrefix: "codex-mode-preferences",
+  });
+  try {
+    await expect
+      .poll(
+        async () =>
+          (await client.getProvidersSnapshot({ cwd })).entries.find(
+            (entry) => entry.provider === "codex",
+          )?.status,
+      )
+      .toBe("ready");
+    const snapshot = await client.getProvidersSnapshot({ cwd });
+    const model = snapshot.entries
+      .find((entry) => entry.provider === "codex")
+      ?.models?.find((candidate) => candidate.thinkingOptions?.length);
+    if (!model?.thinkingOptions?.[0])
+      throw new Error("Codex catalogue must expose a model with thinking options");
+    await page.addInitScript(
+      ({ preferencesKey, modelId, thinkingOptionId }) => {
+        localStorage.setItem(
+          preferencesKey,
+          JSON.stringify({
+            provider: "codex",
+            providerPreferences: {
+              codex: {
+                model: modelId,
+                mode: "auto",
+                thinkingByModel: { [modelId]: thinkingOptionId },
               },
+              mock: { model: "ten-second-stream" },
             },
-            mock: {
-              model: "ten-second-stream",
-            },
-          },
-        }),
-      );
-    },
-    { preferencesKey: CREATE_AGENT_PREFERENCES_KEY, serverId },
-  );
+          } satisfies FormPreferences),
+        );
+      },
+      {
+        preferencesKey: CREATE_AGENT_PREFERENCES_KEY,
+        modelId: model.id,
+        thinkingOptionId: model.thinkingOptions[0].id,
+      },
+    );
+    return model.id;
+  } finally {
+    await client.close();
+  }
 }
 
 async function readCodexModePreference(page: Page): Promise<unknown> {
@@ -155,12 +178,10 @@ test.describe("New workspace Codex mode preferences", () => {
   test("keeps Full Access as the global Codex mode after the workspace draft auto-submit handoff", async ({
     page,
   }) => {
-    const serverId = getServerId();
     const seeded = await seedWorkspace({ repoPrefix: "codex-mode-preferences-" });
     const createAgentRecorder = await recordAndBlockCreateAgentRequests(page);
-    await seedCodexDefaultPermissionPreferences(page, serverId);
-
     try {
+      await seedCodexDefaultPermissionPreferences(page, seeded.repoPath);
       await gotoAppShell(page);
       await waitForSidebarHydration(page);
       await openGlobalNewWorkspaceComposer(page);
@@ -194,18 +215,16 @@ test.describe("New workspace Codex mode preferences", () => {
   });
 
   test("uses the live Codex agent mode as the next New Workspace default", async ({ page }) => {
-    const serverId = getServerId();
     const seeded = await seedWorkspace({ repoPrefix: "codex-live-mode-preferences-" });
-    await seedCodexDefaultPermissionPreferences(page, serverId);
-
     try {
+      const model = await seedCodexDefaultPermissionPreferences(page, seeded.repoPath);
       const agent = await seeded.client.createAgent({
         provider: "codex",
         cwd: seeded.repoPath,
         workspaceId: seeded.workspaceId,
         title: "Codex live mode preference e2e",
         modeId: "auto",
-        model: "gpt-5.4-mini",
+        model,
       });
 
       await openAgentRoute(page, {

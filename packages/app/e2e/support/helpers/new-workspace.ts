@@ -19,11 +19,17 @@ type NewWorkspaceDaemonClient = Pick<
   | "fetchWorkspaces"
   | "getPaseoWorktreeList"
   | "getDaemonConfig"
+  | "installDirectoryPlugin"
+  | "disablePlugin"
+  | "enablePlugin"
   | "inspectWorkspaceRecovery"
   | "listProjects"
   | "on"
   | "patchDaemonConfig"
   | "removeProject"
+  | "removePlugin"
+  | "reloadPlugin"
+  | "setWorkspaceTitle"
 >;
 
 type CreateWorkspacePayload = Awaited<ReturnType<NewWorkspaceDaemonClient["createWorkspace"]>>;

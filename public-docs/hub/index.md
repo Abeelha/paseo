@@ -26,63 +26,34 @@ What that gives you today:
 
 Your daemons keep running agents where they always did. Hub decides when to ask them to.
 
-## What you write
+## What lives in your repository
 
-A file in your repository at `.paseo/hub.yml` says which events start an agent, and where it runs. This one answers a Slack mention in the thread it came from:
+Guided setup creates a project resource file for environments and agents, plus one safe starter workflow:
 
-```yaml
-environments:
-  - name: development
-    kind: daemon
-    daemon: my-macbook
-    cwd: /Users/you/code/project
-
-triggers:
-  - name: slack-help
-    on: slack.mention
-    max_runtime: 2h
-    filters:
-      workspace: T01234567
-      channels: [C01234567]
-      from_users: [U01234567]
-    steps:
-      - id: answer
-        environment: development
-        max_runtime: 30m
-        idle_timeout: 5m
-        agent:
-          provider: codex
-          mode: full-access
-        prompt:
-          - text: |
-              Help with this request.
-
-              Call hub.reply to send your response to the originating conversation.
-              Call hub.finish_execution when the step is complete.
-          - text: |
-              <user-prompt>
-              ${{ paseo.prompt }}
-              </user-prompt>
-        allow_outputs:
-          - type: slack.reply
+```text
+.paseo/
+├── hub.yml
+└── workflows/
+    └── slack-help.yml
 ```
 
-Push it, mention the bot, and an agent starts on your machine. [Workflows](/docs/hub/workflows) builds from here through progress updates, typed inputs, and agents that choose their own model or repository.
+Guided setup deploys the bundle, and mentioning the bot starts an agent on your machine. [Quickstart](/docs/hub/quickstart) runs it end to end; the [generated starter bundle](/docs/hub/configuration#generated-starter-bundle) shows what it wrote, and [Workflows](/docs/hub/workflows) covers routing, prompt partials, and provider-specific replies.
 
 ## Reading order
 
-1. [How it works](/docs/hub/concepts)
-2. [Daemons](/docs/hub/daemons)
-3. [Triggers](/docs/hub/triggers)
-4. [Workflows](/docs/hub/workflows)
-5. [GitHub access](/docs/hub/github)
-6. [Configuration](/docs/hub/configuration)
-7. [Security](/docs/hub/security)
-
-[Quickstart](/docs/hub/quickstart) goes end to end if you would rather start by doing.
+1. [Quickstart](/docs/hub/quickstart)
+2. [How it works](/docs/hub/concepts)
+3. [Daemons](/docs/hub/daemons)
+4. [Triggers](/docs/hub/triggers)
+5. [Workflows](/docs/hub/workflows)
+6. [GitHub access](/docs/hub/github)
+7. [Configuration](/docs/hub/configuration)
+8. [Security](/docs/hub/security)
 
 If a workflow accepts requests from GitHub, Slack, Discord, or the API, read [Hub security](/docs/hub/security) before giving an agent access to a working directory or output capability.
 
-## Where it runs
+## Run Hub yourself
 
-Everything on this page and the pages it links to works the same way on [hosted Hub](/docs/hub/hosted) and on a Hub you run yourself under [self-hosting](/docs/hub/self-hosting).
+Start on your machine with the embedded database, then add PostgreSQL or a public deployment only when you need them. [Self-hosting](/docs/hub/self-hosting) covers each step.
+
+[Hosted Hub](/docs/hub/hosted) uses the same projects, workflows, daemons, and activity model. [Sign in to start a free trial](https://hub.paseo.sh).

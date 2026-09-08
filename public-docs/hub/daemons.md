@@ -18,7 +18,11 @@ Log in from the machine first:
 paseo hub login https://hub.example.com
 ```
 
-The CLI prints a URL and a verification code and opens your browser. The approved login is stored under `PASEO_HOME`. Then enroll the daemon:
+The CLI prints a URL and a verification code and opens your browser. The approved login is stored under `PASEO_HOME`.
+
+In an interactive terminal, login then offers to finish setup: whether to connect this daemon, and whether to initialize and deploy a starter workflow. Both default to yes. Declining the connection prints `paseo hub connect <origin>; then paseo hub init`, since connecting alone leaves the project without a workflow. Declining only the starter prints `paseo hub init`. `--json` or non-TTY login only logs in. [Quickstart](/docs/hub/quickstart) walks through the questions.
+
+Enroll the daemon on its own when you declined, or when the machine is already logged in:
 
 ```sh
 paseo hub connect
@@ -26,7 +30,9 @@ paseo hub connect
 
 `connect` uses the active login to request a single-use enrollment token. The daemon exchanges it for its own relationship credential; your CLI login is never stored as daemon authority.
 
-Each daemon has two identifiers: an immutable generated ID and a friendly slug. Hub normalizes the slug you enter with lowercase words joined by hyphens, so `Build Studio` becomes `build-studio`. The slug is what the dashboard shows and what configuration references.
+Hub derives the daemon's initial slug from its hostname. If that slug is already used in the organization, Hub adds a short daemon ID suffix. You can rename the daemon later in Hub.
+
+Each daemon has two identifiers: an immutable generated ID and a friendly slug. Hub normalizes slugs with lowercase words joined by hyphens, so `Build Studio` becomes `build-studio`. The slug is what the dashboard shows and what configuration references.
 
 You can rename the slug later without changing the daemon ID. Renaming after a configuration is active means updating that configuration.
 
@@ -63,7 +69,7 @@ paseo hub logout --disconnect-daemon --force   # drop local authority when Hub i
 
 ```yaml
 environments:
-  - name: dev
+  dev:
     kind: daemon
     daemon: my-macbook
     cwd: /Users/you/code/your-repo
@@ -78,11 +84,13 @@ To keep executions off your working tree, add a worktree:
 ```yaml
 worktree:
   mode: branch-off
-  newBranch: hub/investigation
+  newBranch: trigger-${{ paseo.execution.id }}
   base: origin/main
 ```
 
-See [Git worktrees](/docs/worktrees) for setup hooks and scripts.
+`${{ paseo.execution.id }}` renders the execution's UUID, so every execution gets its own branch off `origin/main`.
+
+[Environment fields](/docs/hub/configuration/hub-yml#environments) lists what `newBranch` accepts. See [Git worktrees](/docs/worktrees) for setup hooks and scripts.
 
 ## What Hub owns
 
